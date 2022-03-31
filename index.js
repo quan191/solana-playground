@@ -4,6 +4,7 @@ const { createMint, getOrCreateAssociatedAccountInfo, mintTo, transfer , getAcco
 const { clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransaction} =  require('@solana/web3.js');
 const bs58 = require('bs58');
 const USDT = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
+const to = "BcCGVmwnwDwxDtoPnnotgGvisqwbcdF2iWiJtuUVkhR";
 const sendToken = async () =>{
 
     rpcUrl = "https://api.mainnet-beta.solana.com/";
@@ -13,10 +14,12 @@ const sendToken = async () =>{
     const fromWallet = Keypair.fromSecretKey(secretKey);
     console.log(fromWallet.publicKey.toBase58());
     
-    let secretKey2 = bs58.decode(process.env.PRIVATE_KEY2);
-    const toWallet = Keypair.fromSecretKey(secretKey2);
-    console.log(toWallet.publicKey.toBase58());
+    // let secretKey2 = bs58.decode(process.env.PRIVATE_KEY2);
+    // const toAddres = Keypair.fromSecretKey(secretKey2);
+    // console.log(toWallet.publicKey.toBase58());
 
+    let toAddress = new PublicKey(to);
+    console.log(toAddress);
     const USDT_PublicKey = new PublicKey(USDT);
     const USDT_Token = new Token(
       connection,
@@ -33,7 +36,7 @@ const sendToken = async () =>{
     console.log(`from token account : ${fromTokenAccount.address.toBase58()}`);
 
     const toTokenAccount = await USDT_Token.getOrCreateAssociatedAccountInfo(
-        toWallet.publicKey
+        toAddress
     );
     console.log(`to Token account: ${toTokenAccount.address.toBase58()}`);
 
@@ -45,7 +48,7 @@ const sendToken = async () =>{
         toTokenAccount.address,
         fromWallet.publicKey,
         [],
-        1
+        1000000
       )
     );
   // Sign transaction, broadcast, and confirm
