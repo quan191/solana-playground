@@ -1,75 +1,61 @@
-const { createMint, getOrCreateAssociatedTokenAccount, mintTo, transfer , getAccount} = require('@solana/spl-token');
+require('dotenv').config();
+const { createMint, getOrCreateAssociatedAccountInfo, mintTo, transfer , getAccount, Token, TOKEN_PROGRAM_ID} = require('@solana/spl-token');
 
-const { clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL} =  require('@solana/web3.js');
-
-
+const { clusterApiUrl, Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, Transaction, sendAndConfirmTransaction} =  require('@solana/web3.js');
+const bs58 = require('bs58');
+const USDT = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
 const sendToken = async () =>{
-    rpcUrl = "https://api.devnet.solana.com";
+
+    rpcUrl = "https://api.mainnet-beta.solana.com/";
     connection = new Connection(rpcUrl, 'confirmed');
     console.log("Connection to cluster established", rpcUrl);
+    let secretKey = bs58.decode(process.env.PRIVATE_KEY);
+    const fromWallet = Keypair.fromSecretKey(secretKey);
+    console.log(fromWallet.publicKey.toBase58());
+    
+    let secretKey2 = bs58.decode(process.env.PRIVATE_KEY2);
+    const toWallet = Keypair.fromSecretKey(secretKey2);
+    console.log(toWallet.publicKey.toBase58());
 
-    const fromWallet = Keypair.generate();
-    const fromAirdropSignature = await connection.requestAirdrop(fromWallet.publicKey, LAMPORTS_PER_SOL);
-    await connection.confirmTransaction(fromAirdropSignature);
-
-    const toWallet = Keypair.generate();
-
-    const mint = await createMint(
-        connection,
-        fromWallet,
-        fromWallet.publicKey,
-        null,
-        9
+    const USDT_PublicKey = new PublicKey(USDT);
+    const USDT_Token = new Token(
+      connection,
+      USDT_PublicKey,
+      TOKEN_PROGRAM_ID,
+      fromWallet
     );
-    console.log(mint.toBase58());
+    console.log(USDT_Token);
 
-    const fromTokenAccount = await getOrCreateAssociatedTokenAccount(
-        connection,
-        fromWallet,
-        mint,
+
+    const fromTokenAccount = await USDT_Token.getOrCreateAssociatedAccountInfo(
         fromWallet.publicKey
     );
     console.log(`from token account : ${fromTokenAccount.address.toBase58()}`);
 
-    const toTokenAccount = await getOrCreateAssociatedTokenAccount(
-        connection,
-        fromWallet,
-        mint,
+    const toTokenAccount = await USDT_Token.getOrCreateAssociatedAccountInfo(
         toWallet.publicKey
     );
     console.log(`to Token account: ${toTokenAccount.address.toBase58()}`);
 
-    let mintTransaction = await mintTo(
-        connection,
-        fromWallet,
-        mint,
-        fromTokenAccount.address,
-        fromWallet.publicKey,
-        100
-      );
-    console.log(`mint transaction :${mintTransaction}`);
-
-    let transferTransaction = await transfer(
-        connection,
-        fromWallet,
+    var transaction = new Transaction()
+    .add(
+      Token.createTransferInstruction(
+        TOKEN_PROGRAM_ID,
         fromTokenAccount.address,
         toTokenAccount.address,
         fromWallet.publicKey,
-        50
-    )
-     console.log(`transfer transaction :${transferTransaction}`);
-
-    let tokenInfoAccount = await getAccount(
-        connection,
-        fromTokenAccount.address
-    )
-    console.log(`balance account ${fromTokenAccount.address}: ${tokenInfoAccount.amount}`);
-
-    tokenInfoAccount = await getAccount(
-        connection,
-        toTokenAccount.address
+        [],
+        1
+      )
     );
-    console.log(`balance account ${toTokenAccount.address}: ${tokenInfoAccount.amount}`);
+  // Sign transaction, broadcast, and confirm
+  var signature = await sendAndConfirmTransaction(
+    connection,
+    transaction,
+    [fromWallet]
+  );
+  console.log("SIGNATURE", signature);
+  console.log("SUCCESS");
 
   };
 
